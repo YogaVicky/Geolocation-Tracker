@@ -3,6 +3,7 @@ import json
 import requests
 import csv
 import socket
+import ast
 from tkinter import *
 
 
@@ -22,18 +23,52 @@ root = Tk()
 root.title('Geolocation Tracker')
 root.geometry("800x500")
 
-def location():
-  ip=requests.get('https://api.ipify.org').text #public ip
+def connectip():
+  s = socket.socket()
+  port=12347
+  s.connect(('127.0.0.1', port))
+  api_response=s.recv(1024).decode()
+  s.close()
+  return api_response
 
+def convert(api_response):
+    temp=api_response.split(",")
+    temp=[x.strip("'") for x in temp]
+    temp=[x.strip("{") for x in temp]
+    temp=[x.split(":") for x in temp]
+    temp[13][1]=temp[13][1].split(".")
+    temp[13][1]=[x.strip("\"} ") for x in temp[13][1]]
+    temp[13][1]=[temp[13][1][0],temp[13][1][1],temp[13][1][2],temp[13][1][3]]
+    temprem=temp[13][1][3].split("\"")
+    temp[13][1][3]=temprem[0]
+    iptemp="."
+    iptemp=iptemp.join(temp[13][1])
+    data={
+      'status':temp[0][1][2:],
+      'country':temp[1][1][2:],
+      'countryCode':temp[2][1][2:],
+      'region':temp[3][1][2:],
+      'regionName':temp[4][1][2:],
+      'city':temp[5][1][2:],
+      'zip':temp[6][1][2:],
+      'lat':temp[7][1].lstrip("'"),
+      'lon':temp[8][1].lstrip("'"),
+      'timezone':temp[9][1][2:],
+      'isp':temp[10][1][2:],
+      'as':temp[12][1][2:],
+      'ip':iptemp,
+    }
+    return data
+    
+
+
+def location():
+  api_response=connectip()
+  api_response=convert(api_response)
   # print("Getting details for IP: " + ip+".....")
-  l1.config(text="Getting details for IP: " + ip+".....")
+  l1.config(text="Getting details for IP: " +api_response['ip']+".....")
   # print("Details:")
   l2.config(text="Details:")
-  api_response = trigger_api(ip)
-  
-  for x in  api_response:
-
-      print(x,":",api_response[x])
 
   l3.config(text='Status : ' + api_response['status'])
   l4.config(text='Country : ' + api_response['country'])
@@ -46,24 +81,9 @@ def location():
   l11.config(text='LON : ' + str(api_response['lon']))
   l12.config(text='Timezone : ' + api_response['timezone'])
   l13.config(text='ISP : ' + api_response['isp'])
-  l14.config(text='ORG : ' + api_response['org'])
   l15.config(text='AS : ' + api_response['as'])
-  l16.config(text='Query : ' + api_response['query'])
 
-#   status : success
-# country : India
-# countryCode : IN
-# region : TN
-# regionName : Tamil Nadu
-# city : Chennai
-# zip : 600004
-# lat : 13.0878
-# lon : 80.2785
-# timezone : Asia/Kolkata
-# isp : Hathway IP over Cable Internet Access
-# org : Hathway Cable and Datacom Limited
-# as : AS17488 Hathway IP Over Cable Internet
-# query : 115.97.93.214
+
 
 bg = PhotoImage(file="bg.png")
 
@@ -71,6 +91,7 @@ label=Label(root,image=bg)
 label.place(x=0,y=0,relwidth=1,relheight=1)
 
 button = Button(root, text="Click me to get your location!", padx=20, pady=10, command=location, bg='white')
+# button.config(font=("Courier", 10))
 button.pack()
 
 l1 = Label(root,text="IP?",fg="white",bg="black")
@@ -112,15 +133,10 @@ l11.config(font=("Courier", 12))
 l13 = Label(root,text="ISP?",fg="white",bg="black")
 l13.pack(pady=3)
 l13.config(font=("Courier", 12))
-l14 = Label(root,text="ORG?",fg="white",bg="black")
-l14.pack(pady=3)
-l14.config(font=("Courier", 12))
 l15 = Label(root,text="AS?",fg="white",bg="black")
 l15.pack(pady=3)
 l15.config(font=("Courier", 12))
-l16 = Label(root,text="Query?",fg="white",bg="black")
-l16.pack(pady=3)
-l16.config(font=("Courier", 12))
+
 
 root.mainloop()
 
